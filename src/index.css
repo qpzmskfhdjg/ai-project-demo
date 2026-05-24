@@ -233,6 +233,10 @@ body {
   50%       { transform: translate(25px, 25px) scale(1.08); }
 }
 
+@keyframes ringSpin1 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes ringSpin2 { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+@keyframes ringSpin3 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
