@@ -510,6 +510,17 @@ export default function App() {
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
   const outputRef = useRef<HTMLDivElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    v.muted = true
+    v.play().catch(() => {})
+    const onVisible = () => { if (!document.hidden) v.play().catch(() => {}) }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
 
   const handleStream = async () => {
     if (!apiKey.trim() || !userInput.trim()) return
@@ -585,6 +596,7 @@ export default function App() {
       {/* ── HERO ── */}
       <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <video
+          ref={videoRef}
           autoPlay muted loop playsInline
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
           src={VIDEO_URL}
