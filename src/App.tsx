@@ -431,6 +431,8 @@ function NetworkGraph({ blocks, height = 500 }: { blocks: Block[]; height?: numb
       const node = nodesRef.current[idx]
       setPanelPos({ x: node.x, y: node.y })
       setSelectedNode(node)
+    } else {
+      setSelectedNode(null)
     }
     mouseRef.current = { x: -9999, y: -9999 }
     hoveredRef.current = -1
@@ -445,6 +447,8 @@ function NetworkGraph({ blocks, height = 500 }: { blocks: Block[]; height?: numb
       const node = nodesRef.current[idx]
       setPanelPos({ x: node.x, y: node.y })
       setSelectedNode(node)
+    } else {
+      setSelectedNode(null)
     }
   }, [])
 
@@ -469,7 +473,8 @@ function NetworkGraph({ blocks, height = 500 }: { blocks: Block[]; height?: numb
               top: Math.min(Math.max(panelPos.y + 20, 20), height - 60),
               transform: 'translate(-50%, 0)',
             }}
-            onClick={e => e.stopPropagation()}>
+            onClick={e => e.stopPropagation()}
+            onTouchEnd={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <span className="tag tag-purple" style={{ fontSize: 10, padding: '3px 12px', background: 'linear-gradient(135deg, #f3e8ff, #ede9fe)', border: '1px solid rgba(124, 58, 237, 0.15)' }}>{selectedNode.label}</span>
               <button onClick={() => setSelectedNode(null)} style={{ background: 'rgba(107, 114, 128, 0.08)', border: 'none', cursor: 'pointer', padding: 6, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}>
@@ -509,6 +514,7 @@ export default function App() {
   const [liveBlocks, setLiveBlocks] = useState<Block[]>([])
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
+  const [videoPlaying, setVideoPlaying] = useState(false)
   const outputRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -516,18 +522,15 @@ export default function App() {
     const v = videoRef.current
     if (!v) return
     v.muted = true
+    v.setAttribute('playsinline', '')
+    v.setAttribute('webkit-playsinline', '')
     v.load()
-    const tryPlay = () => v.play().catch(() => {})
-    tryPlay()
-    const onVisible = () => { if (!document.hidden) tryPlay() }
-    document.addEventListener('visibilitychange', onVisible)
-    // iOS Safari requires user gesture — play on first touch anywhere
-    const onTouch = () => { tryPlay(); document.removeEventListener('touchstart', onTouch) }
-    document.addEventListener('touchstart', onTouch, { passive: true })
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible)
-      document.removeEventListener('touchstart', onTouch)
+    v.play().then(() => setVideoPlaying(true)).catch(() => {})
+    const onVisible = () => {
+      if (!document.hidden) v.play().then(() => setVideoPlaying(true)).catch(() => {})
     }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
   const handleStream = async () => {
@@ -610,11 +613,22 @@ export default function App() {
           webkit-playsinline="true"
           x-webkit-airplay="allow"
           preload="auto"
+          onPlay={() => setVideoPlaying(true)}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
         >
           <source src={VIDEO_URL} type="video/mp4" />
         </video>
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(255, 255, 255, 0.2)', zIndex: 1 }} />
+        {/* Tap-to-play overlay for iOS Safari — invisible, sits below nav/buttons */}
+        {!videoPlaying && (
+          <div
+            style={{ position: 'absolute', inset: 0, zIndex: 2, cursor: 'pointer' }}
+            onClick={() => {
+              const v = videoRef.current
+              if (v) v.play().then(() => setVideoPlaying(true)).catch(() => {})
+            }}
+          />
+        )}
 
         {/* NAV */}
         <nav style={{ position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 20px 0', gap: 16 }} className="nav-pad">
