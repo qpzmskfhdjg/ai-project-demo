@@ -606,19 +606,33 @@ export default function App() {
 
       {/* ── HERO ── */}
       <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {/* CSS animated gradient — always visible, works in WeChat/all browsers */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 0,
+          background: 'linear-gradient(-45deg, #ffffff, #f5f0ff, #ede9fe, #f0f4ff, #e8f0fe, #f5f0ff, #ffffff)',
+          backgroundSize: '400% 400%',
+          animation: 'gradientFlow 12s ease infinite',
+        }} />
         <video
           ref={videoRef}
           autoPlay muted loop playsInline
           // @ts-ignore
           webkit-playsinline="true"
           x-webkit-airplay="allow"
+          x5-video-player-type="h5"
+          x5-playsinline="true"
+          x5-video-player-fullscreen="false"
           preload="auto"
           onPlay={() => setVideoPlaying(true)}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0,
+            opacity: videoPlaying ? 1 : 0,
+            transition: 'opacity 0.6s ease',
+          }}
         >
           <source src={VIDEO_URL} type="video/mp4" />
         </video>
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255, 255, 255, 0.2)', zIndex: 1 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255, 255, 255, 0.15)', zIndex: 1 }} />
         {/* Tap-to-play overlay for iOS Safari */}
         {!videoPlaying && (
           <div
@@ -806,6 +820,7 @@ export default function App() {
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .nav-pad { padding-left: clamp(20px, 4vw, 48px); padding-right: clamp(20px, 4vw, 48px); }
         .nav-pad-bottom { padding-left: clamp(20px, 4vw, 48px); padding-right: clamp(20px, 4vw, 48px); }
       `}</style>
