@@ -587,71 +587,16 @@ export default function App() {
 
       {/* ── HERO ── */}
       <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {/* SVG three silver rings — pure CSS animation, works in WeChat and all browsers */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(-45deg, #ffffff, #f8f6ff, #f0ecff, #f4f7ff, #edf2ff, #f8f6ff, #ffffff)',
-            backgroundSize: '400% 400%',
-            animation: 'gradientFlow 14s ease infinite',
-          }} />
-          {/* Three silver rings */}
-          <svg
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 'min(92vw, 92vh)',
-              height: 'min(92vw, 92vh)',
-              opacity: 0.42,
-              overflow: 'visible',
-            }}
-            viewBox="0 0 600 600"
-            xmlns="http://www.w3.org/2000/svg"
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
           >
-            <defs>
-              <linearGradient id="rg1" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#c8c8c8" stopOpacity="0"/>
-                <stop offset="18%" stopColor="#d4d4d4" stopOpacity="0.55"/>
-                <stop offset="42%" stopColor="#f0f0f0" stopOpacity="0.9"/>
-                <stop offset="56%" stopColor="#ffffff" stopOpacity="1"/>
-                <stop offset="78%" stopColor="#d0d0d0" stopOpacity="0.55"/>
-                <stop offset="100%" stopColor="#c8c8c8" stopOpacity="0"/>
-              </linearGradient>
-              <linearGradient id="rg2" x1="100%" y1="0%" x2="0%" y2="0%">
-                <stop offset="0%" stopColor="#b0b0b0" stopOpacity="0"/>
-                <stop offset="22%" stopColor="#dcdcdc" stopOpacity="0.6"/>
-                <stop offset="50%" stopColor="#f8f8f8" stopOpacity="1"/>
-                <stop offset="78%" stopColor="#dcdcdc" stopOpacity="0.5"/>
-                <stop offset="100%" stopColor="#b0b0b0" stopOpacity="0"/>
-              </linearGradient>
-              <linearGradient id="rg3" x1="0%" y1="100%" x2="0%" y2="0%">
-                <stop offset="0%" stopColor="#a8a8a8" stopOpacity="0"/>
-                <stop offset="30%" stopColor="#e0e0e0" stopOpacity="0.7"/>
-                <stop offset="62%" stopColor="#ffffff" stopOpacity="1"/>
-                <stop offset="100%" stopColor="#a8a8a8" stopOpacity="0"/>
-              </linearGradient>
-            </defs>
-            {/* Ring 1 — outer, tilted -20deg, clockwise 22s */}
-            <g style={{ transformOrigin: '300px 300px', animation: 'ringSpin1 22s linear infinite' }}>
-              <ellipse cx="300" cy="300" rx="235" ry="80"
-                stroke="url(#rg1)" strokeWidth="2.5" fill="none"
-                transform="rotate(-20, 300, 300)"/>
-            </g>
-            {/* Ring 2 — middle, tilted +15deg, counter-clockwise 16s */}
-            <g style={{ transformOrigin: '300px 300px', animation: 'ringSpin2 16s linear infinite' }}>
-              <ellipse cx="300" cy="300" rx="168" ry="57"
-                stroke="url(#rg2)" strokeWidth="2" fill="none"
-                transform="rotate(15, 300, 300)"/>
-            </g>
-            {/* Ring 3 — inner, tilted -5deg, clockwise 11s */}
-            <g style={{ transformOrigin: '300px 300px', animation: 'ringSpin3 11s linear infinite' }}>
-              <ellipse cx="300" cy="300" rx="102" ry="35"
-                stroke="url(#rg3)" strokeWidth="1.5" fill="none"
-                transform="rotate(-5, 300, 300)"/>
-            </g>
-          </svg>
+            <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260517_222138_3e3205be-3364-417b-a64a-bfe087acbec4.mp4" type="video/mp4" />
+          </video>
         </div>
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.08)', zIndex: 1 }} />
 
