@@ -220,27 +220,8 @@ function NetworkGraph({ blocks, height = 500 }: { blocks: Block[]; height?: numb
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const w = container.clientWidth || 960
-    widthRef.current = w
-    if (nodesRef.current.length === 0) {
-      const { nodes, edges } = buildGraph(blocks, w, height)
-      nodesRef.current = nodes
-      edgesRef.current = edges
-      const cx2 = w / 2
-      const cy2 = height / 2
-      baseOffsetsRef.current = nodes.map(n => ({ dx: n.x - cx2, dy: n.y - cy2 }))
-      perturbRef.current = nodes.map(() => ({ dx: 0, dy: 0, vx: 0, vy: 0 }))
-    }
-
-    const h = height
-    const dpr = window.devicePixelRatio || 1
-    canvas.width = w * dpr
-    canvas.height = h * dpr
-    canvas.style.width = w + 'px'
-    canvas.style.height = h + 'px'
-    ctx.scale(dpr, dpr)
-
     let running = true
+    let animId = 0
 
     const REPEL_RADIUS = 80
     const REPEL_STRENGTH = 0.5
@@ -265,139 +246,164 @@ function NetworkGraph({ blocks, height = 500 }: { blocks: Block[]; height?: numb
       }
     }
 
-    const simulate = () => {
-      if (!running) return
-      const nodes = nodesRef.current
-      const edges = edgesRef.current
-      if (nodes.length === 0) { animRef.current = requestAnimationFrame(simulate); return }
+    const start = (w: number) => {
+      widthRef.current = w
+      const h = height
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = w * dpr
+      canvas.height = h * dpr
+      canvas.style.width = w + 'px'
+      canvas.style.height = h + 'px'
+      ctx.scale(dpr, dpr)
 
-      const cx = w / 2
-      const cy = h / 2
+      if (nodesRef.current.length === 0) {
+        const { nodes, edges } = buildGraph(blocks, w, h)
+        nodesRef.current = nodes
+        edgesRef.current = edges
+        const cx2 = w / 2
+        const cy2 = h / 2
+        baseOffsetsRef.current = nodes.map(n => ({ dx: n.x - cx2, dy: n.y - cy2 }))
+        perturbRef.current = nodes.map(() => ({ dx: 0, dy: 0, vx: 0, vy: 0 }))
+      }
 
-      rotationRef.current += 0.001
-      const cos = Math.cos(rotationRef.current)
-      const sin = Math.sin(rotationRef.current)
+      const simulate = () => {
+        if (!running) return
+        const nodes = nodesRef.current
+        const edges = edgesRef.current
+        if (nodes.length === 0) { animId = requestAnimationFrame(simulate); return }
 
-      const mx = mouseRef.current.x
-      const my = mouseRef.current.y
-      const offsets = baseOffsetsRef.current
-      const perturbs = perturbRef.current
+        const cx = w / 2
+        const cy = h / 2
 
-      // Update perturbation physics
-      for (let i = 0; i < nodes.length; i++) {
-        const p = perturbs[i]
-        if (!p || !offsets[i]) continue
+        rotationRef.current += 0.001
+        const cos = Math.cos(rotationRef.current)
+        const sin = Math.sin(rotationRef.current)
 
-        // Compute current node position (rotation + current perturbation)
-        const { dx: odx, dy: ody } = offsets[i]
-        const baseX = cx + odx * cos - ody * sin
-        const baseY = cy + odx * sin + ody * cos
-        const nodeX = baseX + p.dx
-        const nodeY = baseY + p.dy
+        const mx = mouseRef.current.x
+        const my = mouseRef.current.y
+        const offsets = baseOffsetsRef.current
+        const perturbs = perturbRef.current
 
-        // Mouse repulsion
-        const ndx = nodeX - mx
-        const ndy = nodeY - my
-        const dist = Math.sqrt(ndx * ndx + ndy * ndy)
-        if (dist < REPEL_RADIUS && dist > 1) {
-          const force = ((REPEL_RADIUS - dist) / REPEL_RADIUS) * REPEL_STRENGTH
-          p.vx += (ndx / dist) * force
-          p.vy += (ndy / dist) * force
+        for (let i = 0; i < nodes.length; i++) {
+          const p = perturbs[i]
+          if (!p || !offsets[i]) continue
+
+          const { dx: odx, dy: ody } = offsets[i]
+          const baseX = cx + odx * cos - ody * sin
+          const baseY = cy + odx * sin + ody * cos
+          const nodeX = baseX + p.dx
+          const nodeY = baseY + p.dy
+
+          const ndx = nodeX - mx
+          const ndy = nodeY - my
+          const dist = Math.sqrt(ndx * ndx + ndy * ndy)
+          if (dist < REPEL_RADIUS && dist > 1) {
+            const force = ((REPEL_RADIUS - dist) / REPEL_RADIUS) * REPEL_STRENGTH
+            p.vx += (ndx / dist) * force
+            p.vy += (ndy / dist) * force
+          }
+
+          p.vx += -p.dx * SPRING
+          p.vy += -p.dy * SPRING
+          p.vx *= DAMP
+          p.vy *= DAMP
+          p.dx += p.vx
+          p.dy += p.vy
+
+          const pd = Math.sqrt(p.dx * p.dx + p.dy * p.dy)
+          if (pd > 70) { p.dx = (p.dx / pd) * 70; p.dy = (p.dy / pd) * 70 }
         }
 
-        // Spring back to zero
-        p.vx += -p.dx * SPRING
-        p.vy += -p.dy * SPRING
-
-        // Damping
-        p.vx *= DAMP
-        p.vy *= DAMP
-
-        p.dx += p.vx
-        p.dy += p.vy
-
-        // Clamp
-        const pd = Math.sqrt(p.dx * p.dx + p.dy * p.dy)
-        if (pd > 70) { p.dx = (p.dx / pd) * 70; p.dy = (p.dy / pd) * 70 }
-      }
-
-      // Set node positions
-      for (let i = 0; i < nodes.length; i++) {
-        if (!offsets[i]) continue
-        const { dx, dy } = offsets[i]
-        const p = perturbs[i]
-        nodes[i].x = cx + dx * cos - dy * sin + (p ? p.dx : 0)
-        nodes[i].y = cy + dx * sin + dy * cos + (p ? p.dy : 0)
-      }
-
-      // Hover detection using box bounds
-      let hovered = -1
-      ctx.font = '600 11px Inter, system-ui, sans-serif'
-      for (let i = 0; i < nodes.length; i++) {
-        if (!nodes[i].boxW) nodes[i].boxW = ctx.measureText(nodes[i].label).width + 24
-        const bw = nodes[i].boxW
-        const bh = 26
-        if (mx >= nodes[i].x - bw / 2 && mx <= nodes[i].x + bw / 2 &&
-            my >= nodes[i].y - bh / 2 && my <= nodes[i].y + bh / 2) {
-          hovered = i; break
-        }
-      }
-      if (hovered !== hoveredRef.current) {
-        hoveredRef.current = hovered
-        setIsHoveringAny(hovered >= 0)
-      }
-
-      // Draw
-      ctx.clearRect(0, 0, w, h)
-
-      // Edges
-      for (const edge of edges) {
-        const a = nodes[edge.source]
-        const b = nodes[edge.target]
-        ctx.beginPath()
-        ctx.moveTo(a.x, a.y)
-        ctx.lineTo(b.x, b.y)
-        ctx.strokeStyle = 'rgba(94, 14, 215, 0.10)'
-        ctx.lineWidth = 0.7
-        ctx.stroke()
-      }
-
-      // Text box nodes
-      ctx.font = '600 11px Inter, system-ui, sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-
-      for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i]
-        const isHov = i === hovered
-        if (!node.boxW) node.boxW = ctx.measureText(node.label).width + 24
-        const bw = node.boxW
-        const bh = 26
-        const bx = node.x - bw / 2
-        const by = node.y - bh / 2
-
-        if (isHov) {
-          ctx.shadowColor = 'rgba(94, 14, 215, 0.28)'
-          ctx.shadowBlur = 14
+        for (let i = 0; i < nodes.length; i++) {
+          if (!offsets[i]) continue
+          const { dx, dy } = offsets[i]
+          const p = perturbs[i]
+          nodes[i].x = cx + dx * cos - dy * sin + (p ? p.dx : 0)
+          nodes[i].y = cy + dx * sin + dy * cos + (p ? p.dy : 0)
         }
 
-        drawRoundRect(bx, by, bw, bh, 6)
-        ctx.fillStyle = isHov ? '#ede9fe' : 'rgba(255, 255, 255, 0.93)'
-        ctx.fill()
-        ctx.shadowBlur = 0
-        ctx.strokeStyle = isHov ? ACCENT : 'rgba(94, 14, 215, 0.20)'
-        ctx.lineWidth = isHov ? 1.5 : 1
-        ctx.stroke()
+        let hovered = -1
+        ctx.font = '600 11px Inter, system-ui, sans-serif'
+        for (let i = 0; i < nodes.length; i++) {
+          if (!nodes[i].boxW) nodes[i].boxW = ctx.measureText(nodes[i].label).width + 24
+          const bw = nodes[i].boxW
+          const bh = 26
+          if (mx >= nodes[i].x - bw / 2 && mx <= nodes[i].x + bw / 2 &&
+              my >= nodes[i].y - bh / 2 && my <= nodes[i].y + bh / 2) {
+            hovered = i; break
+          }
+        }
+        if (hovered !== hoveredRef.current) {
+          hoveredRef.current = hovered
+          setIsHoveringAny(hovered >= 0)
+        }
 
-        ctx.fillStyle = isHov ? ACCENT : '#374151'
-        ctx.fillText(node.label, node.x, node.y)
+        ctx.clearRect(0, 0, w, h)
+
+        for (const edge of edges) {
+          const a = nodes[edge.source]
+          const b = nodes[edge.target]
+          ctx.beginPath()
+          ctx.moveTo(a.x, a.y)
+          ctx.lineTo(b.x, b.y)
+          ctx.strokeStyle = 'rgba(94, 14, 215, 0.10)'
+          ctx.lineWidth = 0.7
+          ctx.stroke()
+        }
+
+        ctx.font = '600 11px Inter, system-ui, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i]
+          const isHov = i === hovered
+          if (!node.boxW) node.boxW = ctx.measureText(node.label).width + 24
+          const bw = node.boxW
+          const bh = 26
+          const bx = node.x - bw / 2
+          const by = node.y - bh / 2
+
+          if (isHov) {
+            ctx.shadowColor = 'rgba(94, 14, 215, 0.28)'
+            ctx.shadowBlur = 14
+          }
+
+          drawRoundRect(bx, by, bw, bh, 6)
+          ctx.fillStyle = isHov ? '#ede9fe' : 'rgba(255, 255, 255, 0.93)'
+          ctx.fill()
+          ctx.shadowBlur = 0
+          ctx.strokeStyle = isHov ? ACCENT : 'rgba(94, 14, 215, 0.20)'
+          ctx.lineWidth = isHov ? 1.5 : 1
+          ctx.stroke()
+
+          ctx.fillStyle = isHov ? ACCENT : '#374151'
+          ctx.fillText(node.label, node.x, node.y)
+        }
+
+        animId = requestAnimationFrame(simulate)
       }
 
-      animRef.current = requestAnimationFrame(simulate)
+      animId = requestAnimationFrame(simulate)
     }
 
-    animRef.current = requestAnimationFrame(simulate)
-    return () => { running = false; cancelAnimationFrame(animRef.current) }
+    const tryStart = () => {
+      const w = container.clientWidth
+      if (w < 50) return false
+      start(w)
+      return true
+    }
+
+    if (!tryStart()) {
+      const ro = new ResizeObserver((entries) => {
+        const w = entries[0]?.contentRect.width ?? 0
+        if (w >= 50) { ro.disconnect(); start(w) }
+      })
+      ro.observe(container)
+      return () => { running = false; cancelAnimationFrame(animId); ro.disconnect() }
+    }
+
+    return () => { running = false; cancelAnimationFrame(animId) }
   }, [blocks, height])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -407,6 +413,25 @@ function NetworkGraph({ blocks, height = 500 }: { blocks: Block[]; height?: numb
   }, [])
 
   const handleMouseLeave = useCallback(() => {
+    mouseRef.current = { x: -9999, y: -9999 }
+    hoveredRef.current = -1
+    setIsHoveringAny(false)
+  }, [])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect || !e.touches[0]) return
+    e.preventDefault()
+    mouseRef.current = { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top }
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    const idx = hoveredRef.current
+    if (idx >= 0 && nodesRef.current[idx]) {
+      const node = nodesRef.current[idx]
+      setPanelPos({ x: node.x, y: node.y })
+      setSelectedNode(node)
+    }
     mouseRef.current = { x: -9999, y: -9999 }
     hoveredRef.current = -1
     setIsHoveringAny(false)
@@ -425,8 +450,9 @@ function NetworkGraph({ blocks, height = 500 }: { blocks: Block[]; height?: numb
 
   return (
     <div ref={containerRef} className="graph-wrap"
-      style={{ position: 'relative', width: '100%', height, borderRadius: 12, overflow: 'hidden' }}
-      onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onClick={handleClick}>
+      style={{ position: 'relative', width: '100%', height, borderRadius: 12, overflow: 'hidden', touchAction: 'none' }}
+      onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onClick={handleClick}
+      onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, cursor: isHoveringAny ? 'pointer' : 'default' }} />
 
       <AnimatePresence>
