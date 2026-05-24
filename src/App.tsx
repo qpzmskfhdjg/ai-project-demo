@@ -4,8 +4,6 @@ import { ArrowUpRight, X } from 'lucide-react'
 import './index.css'
 
 const ACCENT = '#5E0ED7'
-const VIDEO_URL =
-  'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260517_222138_3e3205be-3364-417b-a64a-bfe087acbec4.mp4'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
@@ -514,24 +512,7 @@ export default function App() {
   const [liveBlocks, setLiveBlocks] = useState<Block[]>([])
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
-  const [videoPlaying, setVideoPlaying] = useState(false)
   const outputRef = useRef<HTMLDivElement>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-
-  useEffect(() => {
-    const v = videoRef.current
-    if (!v) return
-    v.muted = true
-    v.setAttribute('playsinline', '')
-    v.setAttribute('webkit-playsinline', '')
-    v.load()
-    v.play().then(() => setVideoPlaying(true)).catch(() => {})
-    const onVisible = () => {
-      if (!document.hidden) v.play().then(() => setVideoPlaying(true)).catch(() => {})
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [])
 
   const handleStream = async () => {
     if (!apiKey.trim() || !userInput.trim()) return
@@ -606,48 +587,40 @@ export default function App() {
 
       {/* ── HERO ── */}
       <section style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {/* CSS animated gradient — always visible, works in WeChat/all browsers */}
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 0,
-          background: 'linear-gradient(-45deg, #ffffff, #f5f0ff, #ede9fe, #f0f4ff, #e8f0fe, #f5f0ff, #ffffff)',
-          backgroundSize: '400% 400%',
-          animation: 'gradientFlow 12s ease infinite',
-        }} />
-        <video
-          ref={videoRef}
-          autoPlay muted loop playsInline
-          // @ts-ignore
-          webkit-playsinline="true"
-          x-webkit-airplay="allow"
-          x5-video-player-type="h5"
-          x5-playsinline="true"
-          x5-video-player-fullscreen="false"
-          preload="auto"
-          onPlay={() => setVideoPlaying(true)}
-          style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0,
-            opacity: videoPlaying ? 1 : 0,
-            transition: 'opacity 0.6s ease',
-          }}
-        >
-          <source src={VIDEO_URL} type="video/mp4" />
-        </video>
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255, 255, 255, 0.15)', zIndex: 1 }} />
-        {/* Tap-to-play overlay for iOS Safari */}
-        {!videoPlaying && (
-          <div
-            style={{ position: 'absolute', inset: 0, zIndex: 2, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
-            onTouchStart={(e) => {
-              e.preventDefault()
-              const v = videoRef.current
-              if (v) v.play().then(() => setVideoPlaying(true)).catch(() => {})
-            }}
-            onClick={() => {
-              const v = videoRef.current
-              if (v) v.play().then(() => setVideoPlaying(true)).catch(() => {})
-            }}
-          />
-        )}
+        {/* Pure CSS animated background — works in WeChat and all browsers */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(-45deg, #ffffff, #f5f0ff, #ede9fe, #f0f4ff, #e8f0fe, #f5f0ff, #ffffff)',
+            backgroundSize: '400% 400%',
+            animation: 'gradientFlow 12s ease infinite',
+          }} />
+          <div style={{
+            position: 'absolute', borderRadius: '50%',
+            width: '60vw', height: '60vw', maxWidth: 600, maxHeight: 600,
+            top: '-20%', right: '-10%',
+            background: 'radial-gradient(circle, rgba(94,14,215,0.13) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+            animation: 'floatOrb1 15s ease-in-out infinite',
+          }} />
+          <div style={{
+            position: 'absolute', borderRadius: '50%',
+            width: '50vw', height: '50vw', maxWidth: 500, maxHeight: 500,
+            bottom: '-10%', left: '-10%',
+            background: 'radial-gradient(circle, rgba(124,58,237,0.10) 0%, transparent 70%)',
+            filter: 'blur(50px)',
+            animation: 'floatOrb2 18s ease-in-out infinite',
+          }} />
+          <div style={{
+            position: 'absolute', borderRadius: '50%',
+            width: '40vw', height: '40vw', maxWidth: 400, maxHeight: 400,
+            top: '30%', left: '20%',
+            background: 'radial-gradient(circle, rgba(167,139,250,0.10) 0%, transparent 70%)',
+            filter: 'blur(60px)',
+            animation: 'floatOrb3 20s ease-in-out infinite',
+          }} />
+        </div>
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.08)', zIndex: 1 }} />
 
         {/* NAV */}
         <nav style={{ position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 20px 0', gap: 16 }} className="nav-pad">
@@ -820,7 +793,6 @@ export default function App() {
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .nav-pad { padding-left: clamp(20px, 4vw, 48px); padding-right: clamp(20px, 4vw, 48px); }
         .nav-pad-bottom { padding-left: clamp(20px, 4vw, 48px); padding-right: clamp(20px, 4vw, 48px); }
       `}</style>
