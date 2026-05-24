@@ -619,10 +619,15 @@ export default function App() {
           <source src={VIDEO_URL} type="video/mp4" />
         </video>
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(255, 255, 255, 0.2)', zIndex: 1 }} />
-        {/* Tap-to-play overlay for iOS Safari — invisible, sits below nav/buttons */}
+        {/* Tap-to-play overlay for iOS Safari */}
         {!videoPlaying && (
           <div
-            style={{ position: 'absolute', inset: 0, zIndex: 2, cursor: 'pointer' }}
+            style={{ position: 'absolute', inset: 0, zIndex: 2, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
+            onTouchStart={(e) => {
+              e.preventDefault()
+              const v = videoRef.current
+              if (v) v.play().then(() => setVideoPlaying(true)).catch(() => {})
+            }}
             onClick={() => {
               const v = videoRef.current
               if (v) v.play().then(() => setVideoPlaying(true)).catch(() => {})
