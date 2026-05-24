@@ -516,10 +516,18 @@ export default function App() {
     const v = videoRef.current
     if (!v) return
     v.muted = true
-    v.play().catch(() => {})
-    const onVisible = () => { if (!document.hidden) v.play().catch(() => {}) }
+    v.load()
+    const tryPlay = () => v.play().catch(() => {})
+    tryPlay()
+    const onVisible = () => { if (!document.hidden) tryPlay() }
     document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
+    // iOS Safari requires user gesture — play on first touch anywhere
+    const onTouch = () => { tryPlay(); document.removeEventListener('touchstart', onTouch) }
+    document.addEventListener('touchstart', onTouch, { passive: true })
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      document.removeEventListener('touchstart', onTouch)
+    }
   }, [])
 
   const handleStream = async () => {
@@ -598,9 +606,14 @@ export default function App() {
         <video
           ref={videoRef}
           autoPlay muted loop playsInline
+          // @ts-ignore
+          webkit-playsinline="true"
+          x-webkit-airplay="allow"
+          preload="auto"
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
-          src={VIDEO_URL}
-        />
+        >
+          <source src={VIDEO_URL} type="video/mp4" />
+        </video>
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(255, 255, 255, 0.2)', zIndex: 1 }} />
 
         {/* NAV */}
